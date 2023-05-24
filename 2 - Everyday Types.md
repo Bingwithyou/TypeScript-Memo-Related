@@ -5,7 +5,7 @@
 When you declare a variable using `const`, `var`, or `let`, you can optionally add a type annotation to explicitly specify the type of the variable:
 
 ```ts
-let myName: string = "Alice";`
+let myName: string = "Alice";
 ```
 
 > TypeScript doesn’t use “types on the left”-style declarations like int x = 0; Type annotations will always go _after_ the thing being typed.
