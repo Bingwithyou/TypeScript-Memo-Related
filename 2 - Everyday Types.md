@@ -234,3 +234,114 @@ Being concerned only with the structure and capabilities of types is why we call
 - Key distinction is that a type cannot be re-opened to add new properties vs an interface which is always extendable.
 
 For the most part, you can choose based on personal preference, and TypeScript will tell you if it needs something to be the other kind of declaration. If you would like a heuristic, use `interface` until you need to use features from `type`.
+
+## Literal Types
+
+Both `var` and `let` allow for changing what is held inside the variable, and `const` does not. This is reflected in how TypeScript creates types for literals.
+
+```ts
+let changingString = "Hello World";
+changingString = "Olá Mundo";
+// Because `changingString` can represent any possible string, that
+// is how TypeScript describes it in the type system
+changingString; // let changingString: string
+
+let changingString: string;
+
+const constantString = "Hello World";
+// Because `constantString` can only represent 1 possible string, it
+// has a literal type representation
+constantString;
+
+const constantString: "Hello World"; // const constantString: "Hello World"
+```
+
+By themselves, literal types aren’t very valuable:
+
+```ts
+let x: "hello" = "hello";
+// OK
+x = "hello";
+// ...
+x = "howdy";
+// error: Type '"howdy"' is not assignable to type '"hello"'.
+```
+
+It’s not much use to have a variable that can only have one value!
+
+But by _combining_ literals into unions, you can express a much more useful concept - for example, functions that only accept a certain set of known values:
+
+```ts
+function printText(s: string, alignment: "left" | "right" | "center") {
+  // ...
+}
+printText("Hello, world", "left");
+printText("G'day, mate", "centre");
+// error: Argument of type '"centre"' is not assignable to parameter of type '"left" | "right" | "center"'.
+```
+
+Combine these with non-literal types:
+
+```ts
+interface Options {
+  width: number;
+}
+function configure(x: Options | "auto") {
+  // ...
+}
+configure({ width: 100 });
+configure("auto");
+configure("automatic"); // error: Argument of type '"automatic"' is not assignable to parameter of type 'Options | "auto"'.
+```
+
+> Use `boolean` itself as alias for the union `true | false`.
+
+### Literal Inference
+
+When initialize a varibale with an object, TypeScript assumes that the properties of that object might change values later.
+
+For example, in the code below that if we run `req.method = "POST"` with no error.
+
+But for `handleRequest` its method could only accept "GET" or "POST", TypeScript will consider it have an error.
+
+```ts
+declare function handleRequest(url: string, method: "GET" | "POST"): void;
+const req = { url: "https://example.com", method: "GET" };
+handleRequest(req.url, req.method);
+// error: Argument of type 'string' is not assignable to parameter of type '"GET" | "POST"'.
+```
+
+Two ways to work around:
+
+- Change the inference by adding a type assertion in _either_ location:
+
+```ts
+// Change 1: means that req.method will always has the literal type "GET"
+// preventing the possible assignment of another string to that field after.
+const req = { url: "https://example.com", method: "GET" as "GET" };
+
+// Change 2: same, req.method will has the value "GET" for sure.
+handleRequest(req.url, req.method as "GET");
+```
+
+- Use `as const` to convert the entire object to be type literals:
+
+```ts
+ { url: "https://example.com", method: "GET" } as const;
+handleRequest(req.url, req.method);
+```
+
+Ensuring that all properties are assigned the literal type instead of a more general version like `string` or `number`.
+
+## `null` and `undefined`
+
+### Non-null Assertion Operator (Postfix!)
+
+```ts
+function liveDangerously(x?: number | null) {
+  // No error
+  console.log(x!.toFixed());
+}
+```
+
+Doesn't change the runtime behavior of your code, so it's important to only use ! when you know that the value can't be null or undefined.
