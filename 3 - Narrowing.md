@@ -142,12 +142,79 @@ function example() {
 
 ## Using type predicates
 
+Reference Link: <https://blog.csdn.net/weixin_33727510/article/details/87962412>
+
 `pet is Fish` is our _type predicate_ in this example.
 
 ```ts
 function isFish(pet: Fish | Bird): pet is Fish {
   return (pet as Fish).swim !== undefined;
 }
+
+// We already declare that isFish function its parameter type: pet is Fish
+if (isFish(pet)) {
+  // TypeScript now knows that we dealing with Fish type in isFish function, so this place will no error shows up.
+  pet.swim();
+} else {
+  pet.fly();
+}
 ```
 
 A predicate takes the form `parameterName is Type`, where `parameterName` must be the name of a parameter from the current function signature.
+
+## Discriminated unions
+
+Separate types with specific kind fields - was crucial:
+
+```ts
+interface Circle {
+  kind: "circle";
+  radius: number;
+}
+
+interface Square {
+  kind: "square";
+  sideLength: number;
+}
+
+type Shape = Circle | Square;
+
+function getArea(shape: Shape) {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius ** 2;
+
+    case "square":
+      return shape.sideLength ** 2;
+  }
+}
+```
+
+## Exhaustiveness checking and `never` type
+
+The `never` type is assignable to every type; however, no type is assignable to `never` (except `never` itself).
+
+Adding a `default` to our `getArea` function which tries to assign the shape to `never` will raise an error when every possible case has not been handled.
+
+```ts
+// Adding a new member to the Shape union, will cause a TypeScript error:
+interface Triangle {
+  kind: "triangle";
+  sideLength: number;
+}
+
+type Shape = Circle | Square | Triangle;
+
+function getArea(shape: Shape) {
+  switch (shape.kind) {
+    case "circle":
+      return Math.PI * shape.radius ** 2;
+    case "square":
+      return shape.sideLength ** 2;
+    default:
+      const _exhaustiveCheck: never = shape;
+      // Type 'Triangle' is not assignable to type 'never'.
+      return _exhaustiveCheck;
+  }
+}
+```
